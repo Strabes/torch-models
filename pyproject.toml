@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "torch-models"
+dynamic = ["version"]
+authors = [
+  { name="Greg Strabel", email="gregory.strabel@gmail.com" },
+]
+description = "A package for torch models"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/Strabes/torch-models"
+Issues = "https://github.com/Strabes/torch-models"
+
+[tool.setuptools.dynamic]
+version = {attr = "torch_models.__version__"}
