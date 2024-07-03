@@ -1,5 +1,9 @@
+"""ReindexedOrdinalEncoder"""
+
 import numpy as np
 from sklearn.preprocessing import OrdinalEncoder
+
+
 class ReindexedOrdinalEncoder(OrdinalEncoder):
     def __init__(
         self,
@@ -20,6 +24,7 @@ class ReindexedOrdinalEncoder(OrdinalEncoder):
             self.encoded_missing_value = -1
         self.min_frequency = min_frequency
         self.max_categories = max_categories
+
     def fit(self, X, y=None):
         super(ReindexedOrdinalEncoder, self).fit(X, y)
         return self
@@ -34,12 +39,17 @@ class ReindexedOrdinalEncoder(OrdinalEncoder):
     @property
     def cardinality(self):
         cardinality = {}
-        for i, feature in enumerate(self.feature_names_in_):
+        if hasattr(self, "feature_names_in_"):
+            idx = self.feature_names_in_
+        else:
+            idx = range(self.n_features_in_)
+        for i, feature in enumerate(idx):
             cardinality[feature] = (
                 # number of distinct values (minus one if np.nan is one of the values)
                 len([i for i in self.categories_[i] if i is not np.nan]) 
                 # number of distinct values that are getting mapped to infrequent value
-                - (0 if self.infrequent_categories_[i] is None else len(self.infrequent_categories_[i]) - 1) 
+                - (0 if self.infrequent_categories_[i] is None 
+                   else len(self.infrequent_categories_[i]) - 1) 
                 # number of additional
                 + (2 if self.sep_unknown_missing else 1))
         return cardinality
