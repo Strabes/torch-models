@@ -5,6 +5,7 @@ from torch_models.preprocess.structured_preprocessing import (
     create_categorical_pipeline
 )
 from torch_models.tokenizers.sentencepiece import Sentencepiece
+from torch_models.tokenizers.bert_wordpiece import BERTWordpiece
 import torch
 from typing import Union, List, Dict, Tuple
 import os
@@ -23,7 +24,7 @@ class PreprocessorConfig:
     tokenizer_params: Union[Dict, None] = None
     fitted_: bool = False
 
-TOKENIZERS = ['Sentencepiece']
+TOKENIZERS = ['Sentencepiece', 'BERTWordpiece']
 
 class Preprocessor:
 
@@ -75,7 +76,9 @@ class Preprocessor:
             raise ValueError(f"""Tokenizer type needs to be one of
             {", ".join(TOKENIZERS)} but got {params["tokenizer_type"]}""")
         if params["tokenizer_type"] == "Sentencepiece":
-            return Sentencepiece(params["sentencepiece_config"])
+            return Sentencepiece(params["config"])
+        elif params["tokenizer_type"] == "BERTWordpiece":
+            return BERTWordpiece(params["config"])
 
     def save(self, dir_path):
         dir_path = Path(dir_path)

@@ -13,6 +13,7 @@ class BasicInputLayerConfig:
     text_padding_index: Tuple[int] = ()
     text_cols_max_tokens: Tuple[int] = ()
     text_embedding_dim: int = 16
+    text_embedding_max_norm: float = 5.0
     dropout: float = 0.1
     dtype: torch.dtype = torch.float64
 
@@ -30,7 +31,12 @@ class BasicInputLayer(nn.Module):
         # text
         if len(config.text_cols) > 0:
             self.text_embeddings = nn.ModuleList([
-                nn.Embedding(num_embeddings, config.text_embedding_dim, padding_idx, dtype=config.dtype)
+                nn.Embedding(
+                    num_embeddings = num_embeddings,
+                    embedding_dim = config.text_embedding_dim,
+                    padding_idx = padding_idx,
+                    max_norm = config.text_embedding_max_norm,
+                    dtype=config.dtype)
                 for num_embeddings, padding_idx in
                 zip(config.text_token_cardinalities, config.text_padding_index)
             ])

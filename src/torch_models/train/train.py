@@ -28,7 +28,7 @@ def train_epoch(model, train_dataloader, loss_fn, optimizer, device, scheduler=N
         optimizer.zero_grad()
 
         preds = model(numeric, categorical, text)
-        loss = loss_fn(preds, targets, loss_weights)
+        loss = loss_fn(preds.reshape(-1), targets.reshape(-1))
 
         epoch_loss += loss.item()
 
@@ -61,7 +61,7 @@ def evaluation(model, dataloader, loss_fn, device):
             preds = model(numeric, categorical, text)
 
         # Compute loss
-        loss = loss_fn(preds, targets, loss_weights)
+        loss = loss_fn(preds.reshape(-1), targets.reshape(-1))
         eval_loss.append(loss.item())
 
     eval_loss = np.mean(eval_loss)

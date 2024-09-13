@@ -19,11 +19,11 @@ class MulitModalDataset(Dataset):
         self.dtype = dtype
 
     def __len__(self):
-        return len(self.numeric)
+        return len(self.data['numeric'])
 
     def __getitem__(self, idx):
-        numeric = torch.from_numpy(self.data['numeric'][idx,:], dtype=self.dtype)
-        categorical = torch.from_numpy(self.data['categorical'][idx,:], dtype=self.dtype)
+        numeric = torch.from_numpy(self.data['numeric'][idx,:]).to(dtype=self.dtype)
+        categorical = torch.from_numpy(self.data['categorical'][idx,:]).to(dtype=self.dtype)
         text = [v['input_ids'][idx,:] for k,v in self.data['text'].items()]
         return numeric, categorical, text
 

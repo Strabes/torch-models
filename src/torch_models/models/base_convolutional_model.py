@@ -25,16 +25,19 @@ class BaseConvolutionalModel(nn.Module):
 
         self.basic_input_layer = BasicInputLayer(config)
         if len(config.text_cols) > 0:
-            self.conv1d_list = [nn.ModuleList([
-                nn.Conv1d(
-                    in_channels = config.text_embedding_dim,
-                    out_channels = i,
-                    kernel_size = j,
-                    dtype = config.dtype)
-                    for i,j in zip(
-                        config.text_convolution_num_filters,
-                        config.text_convolution_filter_sizes)
-            ]) for t in config.text_cols]
+            self.conv1d_list = nn.ModuleList([nn.ModuleList() for i in config.text_cols])
+            conv_params = list(zip(
+                config.text_convolution_num_filters,
+                config.text_convolution_filter_sizes))
+            for i,t in enumerate(config.text_cols):
+                for out_channels, kernel_size in conv_params:
+                    con = nn.Conv1d(
+                        in_channels = config.text_embedding_dim,
+                        out_channels = out_channels,
+                        kernel_size = kernel_size,
+                        dtype = config.dtype
+                    )
+                    self.conv1d_list[i].append(con)
 
             self.text_output_layers = nn.ModuleList([
                 nn.Linear(
@@ -75,8 +78,10 @@ class BaseConvolutionalModel(nn.Module):
         if len(self.config.text_cols) > 0:
             text_conv_list = []
             for i, t in enumerate(text):
+                # t is batch_size X text_cols_max_tokens X text_embedding_dim
                 t = t.permute(0,2,1)
-                x_conv_list = [F.relu(conv1d(t)) for conv1d in self.conv1d_list[i]]
+                # t is now batch_size X text_embedding_dim X text_cols_max_tokens
+                x_conv_list = [F.leaky_relu(conv1d(t)) for conv1d in self.conv1d_list[i]]
                 x_pool_list = [F.max_pool1d(x_conv, kernel_size = x_conv.shape[2])
                     for x_conv in x_conv_list]
                 x = torch.cat([x_pool.squeeze(dim=2) for x_pool in x_pool_list], dim=1)
@@ -91,7 +96,7 @@ class BaseConvolutionalModel(nn.Module):
             items_to_concat += text_conv_list
         t = torch.cat(items_to_concat, dim=1)
         for i in range(len(self.config.hidden_layer_dims)):
-            t = F.relu(t)
+            t = F.leaky_relu(t)
             t = self.dropout_list[i](t)
             t = self.hidden_layers[i](t)
         

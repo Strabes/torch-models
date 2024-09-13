@@ -12,7 +12,7 @@ if DOWNLOAD_DATA:
         split = 'full',
         streaming=True,
         trust_remote_code=True)
-    reviews_dataset_head = reviews_dataset.take(10_000)
+    reviews_dataset_head = reviews_dataset.take(100_000)
 
     data = (pd.DataFrame([i for i in reviews_dataset_head])
         .assign(verified_purchase = lambda df: df.verified_purchase.astype(str))

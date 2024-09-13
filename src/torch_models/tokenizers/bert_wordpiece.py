@@ -1,6 +1,6 @@
-"""Sentencepiece Tokenizer"""
+"""BERT Wordpiece Tokenizer"""
 
-from tokenizers import SentencePieceBPETokenizer
+from tokenizers import BertWordPieceTokenizer
 from tokenizers.processors import TemplateProcessing
 from transformers import PreTrainedTokenizerFast
 from dataclasses import dataclass, field
@@ -10,7 +10,7 @@ import os
 import json
 
 @dataclass
-class SentencepieceConfig:
+class BERTWordpieceConfig:
     vocab_size: int = 1_000
     min_frequency: int = 5
     show_progress: bool = True
@@ -21,22 +21,22 @@ class SentencepieceConfig:
     limit_alphabet:int=72
     truncation: bool = True
     model_max_length: int = 512
-    special_tokens: List[str] = field(init=False)
+    special_tokens: list = field(init=False)
     fitted_: bool = False
 
     def __post_init__(self):
         self.special_tokens = [self.pad_token, self.unk_token, self.cls_token]
 
-class Sentencepiece:
-    """Wrapper on Huggingface SentencePieceBPETokenizer"""
+class BERTWordpiece:
+    """Wrapper on Huggingface BertWordPieceTokenizer"""
     def __init__(
         self,
-        config):
+        config: BERTWordpieceConfig):
 
         self.config = config
 
     def fit(self, text):
-        self.tokenizer = SentencePieceBPETokenizer(unk_token=self.config.unk_token)
+        self.tokenizer = BertWordPieceTokenizer(unk_token=self.config.unk_token)
         if self.config.cls_token:
             self.tokenizer.post_processor = TemplateProcessing(
                 single=f"{self.config.cls_token}:0 $A:0",
@@ -45,16 +45,17 @@ class Sentencepiece:
         self.tokenizer.train_from_iterator(
             text,
             vocab_size=self.config.vocab_size,
+            limit_alphabet=self.config.limit_alphabet,
             min_frequency=self.config.min_frequency,
             show_progress=self.config.show_progress,
-            special_tokens=self.config.special_tokens,
-            limit_alphabet=self.config.limit_alphabet
+            special_tokens=self.config.special_tokens
         )
         self.fast_tokenizer = PreTrainedTokenizerFast(
             tokenizer_object=self.tokenizer._tokenizer,
             model_max_length=self.config.model_max_length,
             padding=self.config.padding,
             pad_token=self.config.pad_token,
+            unk_token=self.config.unk_token,
             cls_token = self.config.cls_token,
             truncation=self.config.truncation
         )
@@ -62,7 +63,7 @@ class Sentencepiece:
 
     def transform(self, text):
         if not self.config.fitted_:
-            raise ValueError("This Sentencepiece model is not yet fit.")
+            raise ValueError("This BERTWordpiece model is not yet fit.")
         res = self.fast_tokenizer(
             text,
             truncation = self.config.truncation,
@@ -78,16 +79,17 @@ class Sentencepiece:
             raise ValueError(f"dir_path must be a directory, but {dir_path} is a file")
         if not dir_path.exists():
             os.system(f"mkdir -p {str(dir_path)}")
-        with open(str(dir_path / "metadata.json"), "w") as f:
-            json.dump(self.config.__dict__,f)
+        with open(str(dir_path / "config.json"), "w") as f:
+            json.dump({k: self.config.__getattribute__(k)
+                for k in self.config.__dataclass_fields__.keys()},f)
         self.fast_tokenizer.save_pretrained(str(dir_path / "tokenizer"))
 
     @classmethod
     def load_from_dir(cls, dir_path):
         dir_path = Path(dir_path)
-        with open(str(dir_path / "metadata.json"), "r") as f:
-            metadata = json.load(f)
-        config = SentencepieceConfig(**metadata)
+        with open(str(dir_path / "config.json"), "r") as f:
+            config = json.load(f)
+        config = BERTWordpieceConfig(**config)
         sp = cls(config)
         sp.fast_tokenizer = PreTrainedTokenizerFast.from_pretrained(
             str(dir_path / "tokenizer"),
